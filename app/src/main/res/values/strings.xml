@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">Blue Sea Captain</string>
+    <string name="signup">إنشاء حساب</string>
+    <string name="username">اسم المستخدم</string>
+    <string name="email">البريد الإلكتروني</string>
+    <string name="password">كلمة السر</string>
+    <string name="have_an_account">لديك حساب؟</string>
+    <string name="log_in">تسجيل دخول</string>
+    <string name="date_sample">29 أبريل</string>
+    <string name="available_seats">مقاعد متوفرة</string>
+    <string name="booked">محجوز</string>
+    <string name="booked_sample">محجوز 10</string>
+    <string name="book">احجز</string>
+    <string name="trip_status">حالة الرحلة</string>
+    <string name="to_destination">إلى الوجهة</string>
+    <string name="add_trip">أضف رحلة</string>
+    <string name="start_trip">إبدأ الرحلة</string>
+    <string name="arrived">وصلت الرحلة</string>
+    <string name="from">من بلد</string>
+    <string name="to">إلى بلد</string>
+    <string name="add_trip_success">Trip added successfully</string>
+    <string name="add_trip_failed">Failed to add trip</string>
+    <string name="error_msg_pick_up">pickUp port name can\'t be empty</string>
+    <string name="error_msg_destination">destination port name can\'t be empty</string>
+    <string name="error_msg_available_seat">available seat can\'t be empty</string>
+    <string name="invalid_email">invalid email</string>
+    <string name="invalid_password_length">password too short</string>
+    <string name="login_error">couldn\'t login error accrued</string>
+    <string name="location_permission_needed">location permission needed</string>
+    <string name="ok">ok</string>
+</resources>
+
