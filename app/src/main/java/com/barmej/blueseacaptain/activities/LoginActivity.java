@@ -52,9 +52,9 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-
-        fetchUserProfileAndLogin(firebaseUser.getUid());
-
+        if (firebaseUser != null) {
+            fetchUserProfileAndLogin(firebaseUser.getUid());
+        }
     }
 
     private void loginClicked() {

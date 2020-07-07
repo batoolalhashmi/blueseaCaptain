@@ -39,5 +39,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-database:19.3.0'
     implementation 'com.google.firebase:firebase-auth:19.3.1'
 
+    implementation 'com.google.android.libraries.places:places:2.2.0'
+
+
 
 }

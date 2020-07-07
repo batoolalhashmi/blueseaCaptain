@@ -29,6 +29,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 
 public class TripsListFragment extends Fragment implements TripsListAdapter.OnTripClickListener {
+    private static final String TRIP_REF_PATH = "trips";
     private RecyclerView mRecycleViewTrips;
     private TripsListAdapter mTripsListAdapter;
     private Button mAddTripButton;
@@ -58,7 +59,7 @@ public class TripsListFragment extends Fragment implements TripsListAdapter.OnTr
         mRecycleViewTrips.setAdapter(mTripsListAdapter);
 
         DatabaseReference mDatabase = FirebaseDatabase.getInstance().getReference();
-        Query query = mDatabase.child("trips")
+        Query query = mDatabase.child(TRIP_REF_PATH)
                 .orderByChild("date");
 
         query.addValueEventListener(new ValueEventListener() {
@@ -81,7 +82,6 @@ public class TripsListFragment extends Fragment implements TripsListAdapter.OnTr
     @Override
     public void onTripClick(Trip trip) {
         TripDetailsFragment tripDetailsFragment = new TripDetailsFragment();
-
         Bundle bundle = new Bundle();
         bundle.putSerializable(TripDetailsFragment.TRIP_DATA, trip);
         FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();

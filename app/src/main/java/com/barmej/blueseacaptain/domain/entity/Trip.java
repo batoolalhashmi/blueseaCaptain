@@ -21,6 +21,12 @@ public class Trip implements Serializable {
     private String status;
     private String captainId;
     private List<String> userIds;
+    private String availableSeats;
+    private String bookedUpSeats;
+
+
+    public Trip() {
+    }
 
     public List<String> getUserIds() {
         return userIds;
@@ -61,13 +67,6 @@ public class Trip implements Serializable {
 
     public void setCurrentLng(double currentLng) {
         this.currentLng = currentLng;
-    }
-
-    private String availableSeats;
-    private String bookedUpSeats;
-
-
-    public Trip() {
     }
 
 

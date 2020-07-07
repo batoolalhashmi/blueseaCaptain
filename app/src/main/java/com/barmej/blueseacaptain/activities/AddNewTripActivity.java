@@ -1,11 +1,14 @@
 package com.barmej.blueseacaptain.activities;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,6 +18,9 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.barmej.blueseacaptain.R;
 import com.barmej.blueseacaptain.domain.entity.Trip;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
@@ -41,6 +47,7 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePicker.
     private DatePicker datePicker;
     private Date mTripDate;
     private Button addTripButton;
+
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -77,8 +84,8 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePicker.
 
             }
         });
-
     }
+
 
     private void addTripToFirebase() {
         FirebaseDatabase mDatabase = FirebaseDatabase.getInstance();

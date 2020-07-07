@@ -32,10 +32,11 @@ public class Captain implements Serializable {
         this.id = id;
     }
 
-    public Captain(){
+    public Captain() {
 
     }
-    public enum Status{
+
+    public enum Status {
         FREE,
         ON_TRIP
     }

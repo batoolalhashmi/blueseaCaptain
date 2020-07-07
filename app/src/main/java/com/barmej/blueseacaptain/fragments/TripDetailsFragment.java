@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,6 +66,8 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
     private StatusCallBack statusCallBack = getStatusCallBack();
     private Button startButton;
     private Button arrivedButton;
+    private LatLng pickUpLatLng;
+    private LatLng destinationLatLng;
 
 
     @Nullable
@@ -190,7 +193,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
         });
     }
 
-    public void setPickUpMarker(LatLng target) {
+    private void setPickUpMarker(LatLng target) {
         if (mMap == null) return;
         if (pickUpMarker == null) {
             BitmapDescriptor descriptor = BitmapDescriptorFactory.fromResource(R.drawable.position);
@@ -202,9 +205,10 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
         } else {
             pickUpMarker.setPosition(target);
         }
+
     }
 
-    public void setDestinationMarker(LatLng target) {
+    private void setDestinationMarker(LatLng target) {
         if (mMap == null) return;
         if (destinationMarker == null) {
             BitmapDescriptor descriptor = BitmapDescriptorFactory.fromResource(R.drawable.destination);
@@ -220,8 +224,8 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
 
     private void updateMarkers(Trip trip) {
         if (trip != null) {
-            LatLng pickUpLatLng = new LatLng(trip.getPickUpLat(), trip.getPickUpLng());
-            LatLng destinationLatLng = new LatLng(trip.getDestinationLat(), trip.getDestinationLng());
+            pickUpLatLng = new LatLng(trip.getPickUpLat(), trip.getPickUpLng());
+            destinationLatLng = new LatLng(trip.getDestinationLat(), trip.getDestinationLng());
 
             setPickUpMarker(pickUpLatLng);
             setDestinationMarker(destinationLatLng);
@@ -301,7 +305,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
         }
     }
 
-    public void updateWithStatus(FullStatus fullStatus) {
+    private void updateWithStatus(FullStatus fullStatus) {
 
         String tripStatus = fullStatus.getTrip().getStatus();
 
@@ -318,4 +322,5 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
             startButton.setVisibility(View.GONE);
         }
     }
+
 }
