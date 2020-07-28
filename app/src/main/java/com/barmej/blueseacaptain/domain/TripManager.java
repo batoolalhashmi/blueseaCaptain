@@ -1,3 +1,4 @@
+
 package com.barmej.blueseacaptain.domain;
 
 import androidx.annotation.NonNull;

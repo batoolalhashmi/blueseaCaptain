@@ -27,6 +27,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 
 public class LoginActivity extends AppCompatActivity {
+    private static final String CAPTAIN_REF_PATH = "captains";
     private TextInputEditText emailEt;
     private TextInputEditText passwordEt;
     private TextInputLayout emailLayout;
@@ -68,7 +69,7 @@ public class LoginActivity extends AppCompatActivity {
         }
         hideForm(true);
         FirebaseDatabase mDatabase = FirebaseDatabase.getInstance();
-        final DatabaseReference mDbRef = mDatabase.getReference("captains");
+        final DatabaseReference mDbRef = mDatabase.getReference(CAPTAIN_REF_PATH);
         final String email = emailEt.getText().toString();
         FirebaseAuth.getInstance()
                 .signInWithEmailAndPassword(email, passwordEt.getText().toString())

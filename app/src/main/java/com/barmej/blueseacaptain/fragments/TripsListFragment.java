@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,8 +18,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.barmej.blueseacaptain.R;
 import com.barmej.blueseacaptain.adapter.TripsListAdapter;
 import com.barmej.blueseacaptain.activities.AddNewTripActivity;
-import com.barmej.blueseacaptain.activities.HomeActivity;
 import com.barmej.blueseacaptain.domain.entity.Trip;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -30,6 +32,7 @@ import java.util.ArrayList;
 
 public class TripsListFragment extends Fragment implements TripsListAdapter.OnTripClickListener {
     private static final String TRIP_REF_PATH = "trips";
+    private static final String CAPTAIN_ID = "captainId";
     private RecyclerView mRecycleViewTrips;
     private TripsListAdapter mTripsListAdapter;
     private Button mAddTripButton;
@@ -57,10 +60,11 @@ public class TripsListFragment extends Fragment implements TripsListAdapter.OnTr
 
         mTripsListAdapter = new TripsListAdapter(mTrips, TripsListFragment.this);
         mRecycleViewTrips.setAdapter(mTripsListAdapter);
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
 
         DatabaseReference mDatabase = FirebaseDatabase.getInstance().getReference();
         Query query = mDatabase.child(TRIP_REF_PATH)
-                .orderByChild("date");
+                .orderByChild(CAPTAIN_ID).equalTo(firebaseUser.getUid());
 
         query.addValueEventListener(new ValueEventListener() {
             @Override
@@ -74,6 +78,7 @@ public class TripsListFragment extends Fragment implements TripsListAdapter.OnTr
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
+                Toast.makeText(getContext(), R.string.error, Toast.LENGTH_SHORT).show();
 
             }
         });
@@ -86,6 +91,6 @@ public class TripsListFragment extends Fragment implements TripsListAdapter.OnTr
         bundle.putSerializable(TripDetailsFragment.TRIP_DATA, trip);
         FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
         tripDetailsFragment.setArguments(bundle);
-        fragmentTransaction.replace(R.id.main_layout, tripDetailsFragment, HomeActivity.SAVED_FRAGMENT).addToBackStack(null).commit();
+        fragmentTransaction.replace(R.id.main_layout, tripDetailsFragment).addToBackStack(null).commit();
     }
 }

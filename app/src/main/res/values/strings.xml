@@ -28,5 +28,8 @@
     <string name="login_error">couldn\'t login error accrued</string>
     <string name="location_permission_needed">location permission needed</string>
     <string name="ok">ok</string>
+    <string name="current_trip">رحلة جارية</string>
+    <string name="can_not_add_trip_in_same_date">لا يمكن اضافة رحلتين في نفس اليوم</string>
+    <string name="error">error accured</string>
 </resources>
 

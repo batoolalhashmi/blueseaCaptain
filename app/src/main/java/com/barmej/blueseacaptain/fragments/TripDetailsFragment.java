@@ -1,6 +1,7 @@
 package com.barmej.blueseacaptain.fragments;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -58,6 +59,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
     private GoogleMap mMap;
     private Marker pickUpMarker;
     private Marker destinationMarker;
+    private Marker captainMarker;
     private Trip tripBundle;
     DatabaseReference mDatabase;
     private String id;
@@ -68,6 +70,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
     private Button arrivedButton;
     private LatLng pickUpLatLng;
     private LatLng destinationLatLng;
+    private LatLng currentLatLng;
 
 
     @Nullable
@@ -100,12 +103,13 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     trip = dataSnapshot.child(id).getValue(Trip.class);
-
-                    tripPickUpPortTextView.setText(trip.getPickUpPort());
-                    tripDestinationPortTextView.setText(trip.getDestinationPort());
-                    tripDateTextView.setText(trip.getFormattedDate());
-                    tripAvailableSeats.setText(trip.getAvailableSeats());
-                    tripBookedUpSeats.setText(trip.getBookedUpSeats());
+                    if (trip != null) {
+                        tripPickUpPortTextView.setText(trip.getPickUpPort());
+                        tripDestinationPortTextView.setText(trip.getDestinationPort());
+                        tripDateTextView.setText(trip.getFormattedDate());
+                        tripAvailableSeats.setText(trip.getAvailableSeats());
+                        tripBookedUpSeats.setText(trip.getBookedUpSeats());
+                    }
                 }
 
                 @Override
@@ -189,6 +193,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
         });
     }
@@ -222,21 +227,47 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
         }
     }
 
+    public void setCaptainMarker(LatLng target) {
+        if (mMap == null) return;
+        if (captainMarker == null) {
+            BitmapDescriptor descriptor = BitmapDescriptorFactory.fromResource(R.drawable.boat);
+            MarkerOptions options = new MarkerOptions();
+            options.icon(descriptor);
+            options.position(target);
+
+            captainMarker = mMap.addMarker(options);
+        } else {
+            captainMarker.setPosition(target);
+        }
+    }
+
     private void updateMarkers(Trip trip) {
         if (trip != null) {
+            LatLng captainLatLng = new LatLng(trip.getCurrentLat(), trip.getCurrentLng());
             pickUpLatLng = new LatLng(trip.getPickUpLat(), trip.getPickUpLng());
             destinationLatLng = new LatLng(trip.getDestinationLat(), trip.getDestinationLng());
 
+            if (trip.getStatus().equals(Trip.Status.ON_TRIP.name())) {
+                setCaptainMarker(captainLatLng);
+            }
             setPickUpMarker(pickUpLatLng);
             setDestinationMarker(destinationLatLng);
+
+            showCaptainCurrentLocationOnMap(captainLatLng);
+
         }
+    }
+
+    private void showCaptainCurrentLocationOnMap(LatLng captainLatLng) {
+        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(captainLatLng, 3f);
+        mMap.moveCamera(update);
     }
 
     private PermissionFailListener getPermissionFailListener() {
         return new PermissionFailListener() {
             @Override
             public void onPermissionFail() {
-                final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                final AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
                 builder.setMessage(R.string.location_permission_needed);
 
                 builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
@@ -265,6 +296,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
         }
     }
 
+    @SuppressLint("MissingPermission")
     private void setUpUserLocation() {
         if (mMap == null)
             return;
@@ -275,7 +307,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
             @Override
             public void onSuccess(Location location) {
                 if (location != null) {
-                    LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+                    currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
                     CameraUpdate update = CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f);
                     mMap.moveCamera(update);
                 }
