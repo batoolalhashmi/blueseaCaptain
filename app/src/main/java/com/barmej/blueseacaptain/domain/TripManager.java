@@ -1,4 +1,3 @@
-
 package com.barmej.blueseacaptain.domain;
 
 import androidx.annotation.NonNull;
@@ -17,6 +16,8 @@ import com.google.firebase.database.ValueEventListener;
 public class TripManager {
     private static final String TRIP_REF_PATH = "trips";
     private static final String CAPTAIN_REF_PATH = "captains";
+    private static final String STATUS = "status";
+    private static final String ON_TRIP = "ON_TRIP";
 
     private static TripManager instance;
     private FirebaseDatabase database;
@@ -57,6 +58,32 @@ public class TripManager {
         });
     }
 
+    public void updateCurrentTripLayout(final String captainId, final CallBack callback) {
+        database.getReference(TRIP_REF_PATH).orderByChild(STATUS).equalTo(ON_TRIP).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.exists()) {
+                    callback.onComplete(false);
+                    return;
+                }
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                    trip = ds.getValue(Trip.class);
+                    if (trip != null && trip.getCaptainId().equals(captainId)) {
+                        callback.onComplete(true);
+                    } else {
+                        callback.onComplete(false);
+                    }
+                }
+            }
+
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+    }
+
     public void startListeningForStatus(StatusCallBack statusCallBack, final String tripId) {
         this.statusCallBack = statusCallBack;
         tripStatusListener = database.getReference(TRIP_REF_PATH).child(tripId).addValueEventListener(new ValueEventListener() {
@@ -64,13 +91,10 @@ public class TripManager {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 trip = dataSnapshot.getValue(Trip.class);
                 if (trip != null) {
-                    if (trip.getStatus().equals(Trip.Status.ON_TRIP.name())) {
-                        getCaptainAndNotifyStatus(tripId);
-                    } else {
-                        FullStatus fullStatus = new FullStatus();
-                        fullStatus.setTrip(trip);
-                        notifyListener(fullStatus);
-                    }
+                    FullStatus fullStatus = new FullStatus();
+                    fullStatus.setCaptain(captain);
+                    fullStatus.setTrip(trip);
+                    notifyListener(fullStatus);
                 }
             }
 
@@ -81,38 +105,6 @@ public class TripManager {
         });
     }
 
-    private void getCaptainAndNotifyStatus(String tripId) {
-        database.getReference(TRIP_REF_PATH).child(tripId).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                final Trip trip = dataSnapshot.getValue(Trip.class);
-                database.getReference(CAPTAIN_REF_PATH).child(trip.getCaptainId())
-                        .addListenerForSingleValueEvent(new ValueEventListener() {
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                captain = dataSnapshot.getValue(Captain.class);
-                                if (captain != null) {
-                                    FullStatus fullStatus = new FullStatus();
-                                    fullStatus.setCaptain(captain);
-                                    fullStatus.setTrip(trip);
-                                    notifyListener(fullStatus);
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                            }
-                        });
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-
-    }
 
     private void notifyListener(FullStatus fullStatus) {
         if (statusCallBack != null) {

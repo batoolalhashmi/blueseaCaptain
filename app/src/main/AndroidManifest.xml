@@ -32,15 +32,9 @@
         <activity
             android:name=".activities.AddNewTripActivity"
             android:parentActivityName=".activities.HomeActivity"></activity>
-        <activity android:name=".activities.HomeActivity">
-        </activity>
-        <receiver android:name=".BootCompletedIntentReceiver"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+        <activity android:name=".activities.HomeActivity"
+            android:parentActivityName=".activities.LoginActivity">
+          </activity>
     </application>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />

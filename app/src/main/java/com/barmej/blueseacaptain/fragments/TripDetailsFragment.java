@@ -4,6 +4,8 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 
@@ -24,6 +26,7 @@ import com.barmej.blueseacaptain.R;
 import com.barmej.blueseacaptain.callback.PermissionFailListener;
 import com.barmej.blueseacaptain.callback.StatusCallBack;
 import com.barmej.blueseacaptain.domain.TripManager;
+import com.barmej.blueseacaptain.domain.entity.Captain;
 import com.barmej.blueseacaptain.domain.entity.FullStatus;
 import com.barmej.blueseacaptain.domain.entity.Trip;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -47,6 +50,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import static com.barmej.blueseacaptain.activities.HomeActivity.showCurrentLayout;
 
 public class TripDetailsFragment extends Fragment implements OnMapReadyCallback {
     private static final int REQUEST_LOCATION_PERMISSION = 1;
@@ -93,6 +98,8 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
         mMapView.onCreate(savedInstanceState);
         mMapView.getMapAsync(this);
 
+        showCurrentLayout(false);
+
         Bundle bundle = this.getArguments();
         tripBundle = (Trip) bundle.getSerializable(TRIP_DATA);
         if (tripBundle != null) {
@@ -134,17 +141,22 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
 
     }
 
+
     private StatusCallBack getStatusCallBack() {
         return new StatusCallBack() {
             @Override
             public void onUpdate(FullStatus fullStatus) {
                 String tripStatus = fullStatus.getTrip().getStatus();
-                if (tripStatus.equals(Trip.Status.MOVING_SOON.name())) {
+                String captainStatus = fullStatus.getCaptain().getStatus();
+
+                if (tripStatus.equals(Trip.Status.MOVING_SOON.name()) && captainStatus.equals(Captain.Status.FREE.name())) {
                     updateWithStatus(fullStatus);
                 } else if (tripStatus.equals(Trip.Status.ON_TRIP.name())) {
                     updateWithStatus(fullStatus);
                     trackAndSendLocationUpdates();
                 } else if (tripStatus.equals(Trip.Status.ARRIVED.name())) {
+                    updateWithStatus(fullStatus);
+                } else {
                     updateWithStatus(fullStatus);
                 }
             }
@@ -153,8 +165,10 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
 
     private void trackAndSendLocationUpdates() {
         if (locationCallback == null) {
+            LocationRequest locationRequest = new LocationRequest();
+            locationRequest.setInterval(5000);
+            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
             locationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity());
-
             locationCallback = new LocationCallback() {
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
@@ -166,7 +180,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
 
             };
             if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                locationProviderClient.requestLocationUpdates(new LocationRequest(), locationCallback, null);
+                locationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
             }
         }
     }
@@ -182,13 +196,37 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
 
     @Override
     public void onMapReady(final GoogleMap googleMap) {
+        mMap = googleMap;
         checkLocationPermissionAndSetUpLocation();
+        mDatabase.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                Trip trip = dataSnapshot.child(id).getValue(Trip.class);
+                if (trip != null) {
+                    pickUpLatLng = new LatLng(trip.getPickUpLat(), trip.getPickUpLng());
+                    destinationLatLng = new LatLng(trip.getDestinationLat(), trip.getDestinationLng());
+                    setPickUpMarker(pickUpLatLng);
+                    setDestinationMarker(destinationLatLng);
+                    LatLng captainLatLng = new LatLng(trip.getCurrentLat(), trip.getCurrentLng());
+                    setCaptainMarker(captainLatLng);
+                    CameraUpdate update = CameraUpdateFactory.newLatLngZoom(captainLatLng, 10f);
+                    mMap.moveCamera(update);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
         mDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Trip trip = dataSnapshot.child(id).getValue(Trip.class);
-                mMap = googleMap;
-                updateMarkers(trip);
+                if (trip != null && trip.getStatus().equals(Trip.Status.ON_TRIP.name())) {
+                    LatLng captainLatLng = new LatLng(trip.getCurrentLat(), trip.getCurrentLng());
+                    setCaptainMarker(captainLatLng);
+                }
             }
 
             @Override
@@ -205,7 +243,6 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
             MarkerOptions options = new MarkerOptions();
             options.icon(descriptor);
             options.position(target);
-
             pickUpMarker = mMap.addMarker(options);
         } else {
             pickUpMarker.setPosition(target);
@@ -234,32 +271,11 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
             MarkerOptions options = new MarkerOptions();
             options.icon(descriptor);
             options.position(target);
-
             captainMarker = mMap.addMarker(options);
         } else {
             captainMarker.setPosition(target);
         }
-    }
-
-    private void updateMarkers(Trip trip) {
-        if (trip != null) {
-            LatLng captainLatLng = new LatLng(trip.getCurrentLat(), trip.getCurrentLng());
-            pickUpLatLng = new LatLng(trip.getPickUpLat(), trip.getPickUpLng());
-            destinationLatLng = new LatLng(trip.getDestinationLat(), trip.getDestinationLng());
-
-            if (trip.getStatus().equals(Trip.Status.ON_TRIP.name())) {
-                setCaptainMarker(captainLatLng);
-            }
-            setPickUpMarker(pickUpLatLng);
-            setDestinationMarker(destinationLatLng);
-
-            showCaptainCurrentLocationOnMap(captainLatLng);
-
-        }
-    }
-
-    private void showCaptainCurrentLocationOnMap(LatLng captainLatLng) {
-        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(captainLatLng, 3f);
+        CameraUpdate update = CameraUpdateFactory.newLatLng(captainMarker.getPosition());
         mMap.moveCamera(update);
     }
 
@@ -300,7 +316,6 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
     private void setUpUserLocation() {
         if (mMap == null)
             return;
-        mMap.setMyLocationEnabled(true);
 
         FusedLocationProviderClient locationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity());
         locationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -308,7 +323,7 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
             public void onSuccess(Location location) {
                 if (location != null) {
                     currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                    CameraUpdate update = CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f);
+                    CameraUpdate update = CameraUpdateFactory.newLatLng(currentLatLng);
                     mMap.moveCamera(update);
                 }
             }
@@ -340,8 +355,9 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
     private void updateWithStatus(FullStatus fullStatus) {
 
         String tripStatus = fullStatus.getTrip().getStatus();
+        String captainStatus = fullStatus.getCaptain().getStatus();
 
-        if (tripStatus.equals(Trip.Status.MOVING_SOON.name())) {
+        if (tripStatus.equals(Trip.Status.MOVING_SOON.name()) && captainStatus.equals(Captain.Status.FREE.name())) {
             arrivedButton.setVisibility(View.GONE);
             startButton.setVisibility(View.VISIBLE);
 
@@ -349,9 +365,19 @@ public class TripDetailsFragment extends Fragment implements OnMapReadyCallback 
             arrivedButton.setVisibility(View.VISIBLE);
             startButton.setVisibility(View.GONE);
 
+
         } else if (tripStatus.equals(Trip.Status.ARRIVED.name())) {
-            arrivedButton.setVisibility(View.GONE);
+            arrivedButton.setVisibility(View.VISIBLE);
+            arrivedButton.setClickable(false);
+            arrivedButton.setText(R.string.arrived_to_destination);
+            arrivedButton.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
             startButton.setVisibility(View.GONE);
+            stopLocationUpdates();
+        } else {
+            startButton.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+            startButton.setClickable(false);
+            startButton.setVisibility(View.VISIBLE);
+            arrivedButton.setVisibility(View.GONE);
         }
     }
 

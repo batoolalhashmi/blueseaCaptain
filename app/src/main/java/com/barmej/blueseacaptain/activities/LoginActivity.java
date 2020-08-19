@@ -9,6 +9,7 @@ import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.barmej.blueseacaptain.R;
@@ -34,6 +35,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextInputLayout passwordLayout;
     private Button loginBt;
     private ProgressBar progressBar;
+    private TextView login_text;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +47,7 @@ public class LoginActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         emailLayout = findViewById(R.id.email_layout);
         passwordLayout = findViewById(R.id.password_layout);
-
+        login_text = findViewById(R.id.login_text);
         loginBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -54,6 +56,7 @@ public class LoginActivity extends AppCompatActivity {
         });
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
+            hideForm(true);
             fetchUserProfileAndLogin(firebaseUser.getUid());
         }
     }
@@ -119,15 +122,16 @@ public class LoginActivity extends AppCompatActivity {
     private void hideForm(boolean hide) {
         if (hide) {
             progressBar.setVisibility(View.VISIBLE);
-
             passwordLayout.setVisibility(View.INVISIBLE);
             emailLayout.setVisibility(View.INVISIBLE);
             loginBt.setVisibility(View.INVISIBLE);
+            login_text.setVisibility(View.INVISIBLE);
         } else {
             progressBar.setVisibility(View.INVISIBLE);
             passwordLayout.setVisibility(View.VISIBLE);
             emailLayout.setVisibility(View.VISIBLE);
             loginBt.setVisibility(View.VISIBLE);
+            login_text.setVisibility(View.VISIBLE);
         }
     }
 

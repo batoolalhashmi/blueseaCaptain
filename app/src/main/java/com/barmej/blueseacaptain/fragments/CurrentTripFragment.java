@@ -20,15 +20,10 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
-import java.text.DateFormat;
-import java.util.Calendar;
-import java.util.Date;
-
-import static java.text.DateFormat.getDateInstance;
-
 public class CurrentTripFragment extends Fragment {
     private static final String TRIP_REF_PATH = "trips";
-    private static final String FORMATTED_DATE = "formattedDate";
+    private static final String ON_TRIP = "ON_TRIP";
+    private static final String STATUS = "status";
     private Trip trip;
 
 
@@ -44,13 +39,10 @@ public class CurrentTripFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         final TextView tripPickUpPortTextView = view.findViewById(R.id.pick_up_port_text_view);
         final TextView tripDestinationPortTextView = view.findViewById(R.id.destination_port_text_view);
-        final Calendar calendar = Calendar.getInstance();
-        final Date date = calendar.getTime();
-        String stringDate = getDateInstance(DateFormat.MEDIUM).format(date);
 
         DatabaseReference mDatabase = FirebaseDatabase.getInstance().getReference();
-        Query query = mDatabase.child(TRIP_REF_PATH).orderByChild(FORMATTED_DATE)
-                .equalTo(stringDate);
+        Query query = mDatabase.child(TRIP_REF_PATH).orderByChild(STATUS)
+                .equalTo(ON_TRIP);
         query.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -69,4 +61,5 @@ public class CurrentTripFragment extends Fragment {
             }
         });
     }
+
 }

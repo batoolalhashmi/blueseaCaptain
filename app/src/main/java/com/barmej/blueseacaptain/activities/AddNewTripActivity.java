@@ -47,10 +47,14 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePicker.
     private TextInputEditText mTripPickUpPortTextInputEditText;
     private TextInputEditText mTripDestinationPortTextInputEditText;
     private TextInputEditText mAvailableSeatsTextInputEditText;
+    DatabaseReference mDbRef;
     private Date mTripDate;
     private Button addTripButton;
-    private Trip checkTrip;
     private String stringDate;
+    private String tripId;
+    Trip checkTrip;
+    Trip trip;
+
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -96,11 +100,9 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePicker.
 
     private void addTripToFirebase() {
         FirebaseDatabase mDatabase = FirebaseDatabase.getInstance();
-        final DatabaseReference mDbRef = mDatabase.getReference(TRIP_REF_PATH);
+        mDbRef = mDatabase.getReference(TRIP_REF_PATH);
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-
-        final Trip trip = new Trip();
-
+        trip = new Trip();
         final String captainId = firebaseUser.getUid();
 
         trip.setPickUpPort(mTripPickUpPortTextInputEditText.getText().toString());
@@ -109,51 +111,35 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePicker.
         trip.setCaptainId(captainId);
         trip.setStatus(Trip.Status.MOVING_SOON.name());
 
-        if (mTripDate != null) {
-            trip.setDate(mTripDate.getTime());
-            stringDate = getDateInstance(DateFormat.MEDIUM).format(mTripDate);
-
-        } else {
+        if (mTripDate == null) {
             Calendar calendar = Calendar.getInstance();
             stringDate = getDateInstance(DateFormat.MEDIUM).format(calendar.getTime());
             trip.setDate(calendar.getTime().getTime());
-
+        } else {
+            trip.setDate(mTripDate.getTime());
+            stringDate = getDateInstance(DateFormat.MEDIUM).format(mTripDate);
         }
+        trip.setBookedUpSeats("0");
         Query query = mDbRef.orderByChild(FORMATTED_DATE).equalTo(stringDate);
         query.addListenerForSingleValueEvent(new ValueEventListener() {
+
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.exists()) {
+                    completeAddingTrip();
+                    return;
+                }
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
                     checkTrip = ds.getValue(Trip.class);
                 }
-                if (checkTrip != null && checkTrip.getCaptainId().contains(captainId)) {
+                if (checkTrip != null && checkTrip.getCaptainId().equals(captainId) && !checkTrip.getStatus().equals(Trip.Status.ARRIVED.name())) {
                     Toast.makeText(AddNewTripActivity.this, R.string.can_not_add_trip_in_same_date, Toast.LENGTH_LONG).show();
                     addTripButton.setVisibility(View.VISIBLE);
                 } else {
-                    trip.setBookedUpSeats("0");
-                    final String tripId = mDbRef.push().getKey();
-                    trip.setId(tripId);
-
-                    mDbRef.child(tripId).setValue(trip).
-
-                            addOnCompleteListener(new OnCompleteListener<Void>() {
-                                @Override
-                                public void onComplete(@NonNull Task<Void> task) {
-                                    if (task.isSuccessful()) {
-                                        Snackbar.make(mConstraintLayout, R.string.add_trip_success, Snackbar.LENGTH_SHORT).addCallback(new Snackbar.Callback() {
-                                            @Override
-                                            public void onDismissed(Snackbar transientBottomBar, int event) {
-                                                super.onDismissed(transientBottomBar, event);
-                                                finish();
-                                            }
-                                        }).show();
-                                    } else {
-                                        Snackbar.make(mConstraintLayout, R.string.add_trip_failed, Snackbar.LENGTH_SHORT).show();
-                                    }
-                                }
-                            });
+                    completeAddingTrip();
                 }
             }
+
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
@@ -161,6 +147,31 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePicker.
 
             }
         });
+    }
+
+    private void completeAddingTrip() {
+        tripId = mDbRef.push().getKey();
+        trip.setId(tripId);
+        mDbRef.child(tripId).setValue(trip).
+                addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Snackbar.make(mConstraintLayout, R.string.add_trip_success, Snackbar.LENGTH_SHORT).addCallback(new Snackbar.Callback() {
+                                @Override
+                                public void onDismissed(Snackbar transientBottomBar, int event) {
+                                    super.onDismissed(transientBottomBar, event);
+                                    finish();
+                                }
+                            }).show();
+                        } else {
+                            Snackbar.make(mConstraintLayout, R.string.add_trip_failed, Snackbar.LENGTH_SHORT).show();
+                            addTripButton.setVisibility(View.VISIBLE);
+                        }
+
+                    }
+
+                });
     }
 
     @Override

@@ -2,16 +2,14 @@ package com.barmej.blueseacaptain.activities;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentTransaction;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import com.barmej.blueseacaptain.R;
 import com.barmej.blueseacaptain.domain.entity.Trip;
@@ -24,24 +22,17 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
-import java.text.DateFormat;
-import java.util.Calendar;
-import java.util.Date;
-
-import static java.text.DateFormat.getDateInstance;
-
 public class HomeActivity extends AppCompatActivity {
-    private CurrentTripFragment currentTripInfoFragment;
+    private static final String SAVED_FRAGMENT = "fragment";
     private TripsListFragment tripsListFragment;
     private static final String TRIP_REF_PATH = "trips";
-    private static final String FORMATTED_DATE = "formattedDate";
+    private static final String ON_TRIP = "ON_TRIP";
+    private static final String STATUS = "status";
     private Trip trip;
-    private FrameLayout currentTripFragmentFrameLayout;
+    private static FrameLayout currentTripFragmentFrameLayout;
     private DatabaseReference mDatabase;
-    private Query query;
     FragmentTransaction fragmentTransaction;
     FirebaseUser firebaseUser;
 
@@ -54,55 +45,40 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        currentTripInfoFragment = new CurrentTripFragment();
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         currentTripFragmentFrameLayout = findViewById(R.id.fragment_current_trip);
-
-        tripsListFragment = (TripsListFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_trip_list);
-
-        registerReceiver(m_timeChangedReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
-        registerReceiver(m_timeChangedReceiver, new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED));
-        registerReceiver(m_timeChangedReceiver, new IntentFilter(Intent.ACTION_TIME_CHANGED));
-
-        final Calendar calendar = Calendar.getInstance();
-        final Date currentDate = calendar.getTime();
-        updateCurrentFragment(currentDate);
-
-    }
-
-    private final BroadcastReceiver m_timeChangedReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            Date currentDate = new Date();
-            if (action.equals(Intent.ACTION_TIME_CHANGED) ||
-                    action.equals(Intent.ACTION_TIMEZONE_CHANGED) ||
-                    action.equals(Intent.ACTION_TIME_TICK)) {
-                updateCurrentFragment(currentDate);
-            }
+        tripsListFragment = new TripsListFragment();
+        if (savedInstanceState == null) {
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.replace(R.id.main_fragment, tripsListFragment, SAVED_FRAGMENT).commit();
+        } else {
+            tripsListFragment = (TripsListFragment) getSupportFragmentManager().findFragmentByTag(SAVED_FRAGMENT);
         }
-    };
-
-    public void onDestroy() {
-        super.onDestroy();
-        unregisterReceiver(m_timeChangedReceiver);
+        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        updateCurrentFragment();
     }
 
-    private void updateCurrentFragment(Date currentDate) {
-        currentTripFragmentFrameLayout.setVisibility(View.GONE);
-        String stringDate = getDateInstance(DateFormat.MEDIUM).format(currentDate);
-        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-        mDatabase = FirebaseDatabase.getInstance().getReference();
-        query = mDatabase.child(TRIP_REF_PATH).orderByChild(FORMATTED_DATE)
-                .equalTo(stringDate);
-        query.addValueEventListener(new ValueEventListener() {
+    public static void showCurrentLayout(boolean showCurrentLayout) {
+        if (showCurrentLayout) {
+            currentTripFragmentFrameLayout.setVisibility(View.VISIBLE);
+        } else {
+            currentTripFragmentFrameLayout.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void updateCurrentFragment() {
+        mDatabase = FirebaseDatabase.getInstance().getReference(TRIP_REF_PATH);
+        mDatabase.orderByChild(STATUS).equalTo(ON_TRIP).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for (DataSnapshot ds : dataSnapshot.getChildren()) {
                     trip = ds.getValue(Trip.class);
                     if (trip != null && trip.getCaptainId().equals(firebaseUser.getUid())) {
-                        currentTripFragmentFrameLayout.setVisibility(View.VISIBLE);
                         if (!isFinishing()) {
                             fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                            CurrentTripFragment currentTripInfoFragment = new CurrentTripFragment();
                             fragmentTransaction.replace(R.id.fragment_current_trip, currentTripInfoFragment).commitAllowingStateLoss();
                         }
                         currentTripFragmentFrameLayout.setOnClickListener(new View.OnClickListener() {
@@ -112,19 +88,17 @@ public class HomeActivity extends AppCompatActivity {
                                 Bundle bundle = new Bundle();
                                 bundle.putSerializable(TripDetailsFragment.TRIP_DATA, trip);
                                 tripDetailsFragment.setArguments(bundle);
-                                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                                fragmentTransaction.replace(R.id.main_layout, tripDetailsFragment).addToBackStack(null).commit();
+                                FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                                fragmentTransaction.replace(R.id.main_fragment, tripDetailsFragment).addToBackStack(null).commit();
                             }
                         });
-                    } else {
-                        currentTripFragmentFrameLayout.setVisibility(View.GONE);
                     }
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                Toast.makeText(HomeActivity.this, R.string.error, Toast.LENGTH_SHORT).show();
+
             }
         });
     }
